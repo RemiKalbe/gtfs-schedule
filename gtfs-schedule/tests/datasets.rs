@@ -57,3 +57,8 @@ fn test_good_feed_au_sydney_entrances() {
         },
     );
 }
+
+#[test]
+fn test_good_flatten_feed() {
+    test_dataset("flatten_feed", Ok(()));
+}

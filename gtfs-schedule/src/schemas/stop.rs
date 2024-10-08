@@ -12,7 +12,7 @@ use serde_repr::*;
 
 use crate::error::{Result, SchemaValidationError};
 
-use super::{GtfsCoord, LevelId, LocationType, Schema};
+use super::{coord_type, GtfsCoord, LevelId, LocationType, Schema};
 
 /// Identifies a location: stop/platform, station, entrance/exit, generic node or boarding area.
 ///
@@ -95,7 +95,7 @@ pub struct Stop {
     /// - Optional for locations which are generic nodes ([`LocationType::GenericNode`])
     /// or boarding areas ([`LocationType::BoardingArea`]).
     #[serde(flatten)]
-    pub stop_coord: Option<GtfsCoord>,
+    pub stop_coord: Option<GtfsCoord<{ coord_type::STOP }>>,
     /// Identifies the fare zone for a stop. If this record represents a station or
     /// station entrance, the [`Stop::zone_id`] is ignored.
     pub zone_id: Option<String>,

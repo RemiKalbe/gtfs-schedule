@@ -498,69 +498,93 @@ where
     serializer.serialize_u8(if *value { 1 } else { 0 })
 }
 
+/// Module acting as an Enum. Workaround for the lack
+/// of support for associated enum constants in Rust.
+pub mod coord_type {
+    pub type T = u8;
+    pub const STOP: T = 0;
+    pub const SHAPE: T = 1;
+}
+
 /// Represents a coordinate. This is a wrapper around [`geo::Coord`] that implements
 /// serialization and deserialization for the GTFS format.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(from = "GtfsCoordFlatten", into = "GtfsCoordFlatten")]
-pub struct GtfsCoord(Coord);
-
 #[derive(Debug, Clone, PartialEq)]
-/// Represents a GTFS coordinate.
-///
-/// This struct implements custom serialization and deserialization to handle
-/// trimming of leading and trailing whitespace.
-pub struct GtfsCoordFlatten {
+pub struct GtfsCoord<const COORD_TYPE: coord_type::T>(Coord);
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// Represents a GTFS coordinate for stops.
+pub struct GtfsStopCoordFlatten {
     pub stop_lat: f64,
     pub stop_lon: f64,
 }
 
-impl Serialize for GtfsCoordFlatten {
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// Represents a GTFS coordinate for shapes.
+pub struct GtfsShapeCoordFlatten {
+    pub shape_pt_lat: f64,
+    pub shape_pt_lon: f64,
+}
+
+impl<const COORD_TYPE: coord_type::T> Serialize for GtfsCoord<COORD_TYPE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut state = serializer.serialize_struct("GtfsCoordFlatten", 2)?;
-        state.serialize_field("stop_lat", &self.stop_lat)?;
-        state.serialize_field("stop_lon", &self.stop_lon)?;
+        let (lat_field_name, lon_field_name, struct_name) = match COORD_TYPE {
+            coord_type::STOP => ("stop_lat", "stop_lon", "GtfsStopCoordFlatten"),
+            coord_type::SHAPE => ("shape_pt_lat", "shape_pt_lon", "GtfsShapeCoordFlatten"),
+            _ => unreachable!(),
+        };
+
+        let mut state = serializer.serialize_struct(struct_name, 2)?;
+        state.serialize_field(lat_field_name, &self.y)?;
+        state.serialize_field(lon_field_name, &self.x)?;
         state.end()
     }
 }
 
-impl<'de> Deserialize<'de> for GtfsCoordFlatten {
+impl<'de, const COORD_TYPE: coord_type::T> Deserialize<'de> for GtfsCoord<COORD_TYPE> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        /// Custom visitor for deserializing GtfsCoordFlatten.
+        /// Custom visitor for deserializing GtfsCoord.
         ///
         /// This visitor is responsible for the flexible parsing of coordinate values.
-        struct GtfsCoordFlattenVisitor;
+        struct GtfsCoordVisitor<const COORD_TYPE: coord_type::T>;
 
-        impl<'de> Visitor<'de> for GtfsCoordFlattenVisitor {
-            type Value = GtfsCoordFlatten;
+        impl<'de, const COORD_TYPE: coord_type::T> Visitor<'de> for GtfsCoordVisitor<COORD_TYPE> {
+            type Value = GtfsCoord<{ COORD_TYPE }>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a GtfsCoordFlatten")
+                formatter.write_str("a GtfsCoord")
             }
 
-            fn visit_map<V>(self, mut map: V) -> Result<GtfsCoordFlatten, V::Error>
+            fn visit_map<V>(self, mut map: V) -> Result<GtfsCoord<COORD_TYPE>, V::Error>
             where
                 V: de::MapAccess<'de>,
             {
-                let mut stop_lat = None;
-                let mut stop_lon = None;
+                let mut lat = None;
+                let mut lon = None;
+
+                // Determine the field names based on the coordinate type
+                let (lat_field_name, lon_field_name, _) = match COORD_TYPE {
+                    coord_type::STOP => ("stop_lat", "stop_lon", "GtfsStopCoordFlatten"),
+                    coord_type::SHAPE => ("shape_pt_lat", "shape_pt_lon", "GtfsShapeCoordFlatten"),
+                    _ => unreachable!(),
+                };
 
                 // Iterate through the map fields
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
-                        "stop_lat" => {
+                        ref field_name if field_name == &lat_field_name => {
                             let value: serde_json::Value = map.next_value()?;
-                            stop_lat = Some(parse_float(&value).map_err(de::Error::custom)?);
+                            lat = Some(parse_float(&value).map_err(de::Error::custom)?);
                         }
-                        "stop_lon" => {
+                        ref field_name if field_name == &lon_field_name => {
                             let value: serde_json::Value = map.next_value()?;
-                            stop_lon = Some(parse_float(&value).map_err(de::Error::custom)?);
+                            lon = Some(parse_float(&value).map_err(de::Error::custom)?);
                         }
                         _ => {
                             // Ignore unknown fields
@@ -570,15 +594,15 @@ impl<'de> Deserialize<'de> for GtfsCoordFlatten {
                 }
 
                 // Ensure both latitude and longitude are present
-                let stop_lat = stop_lat.ok_or_else(|| de::Error::missing_field("stop_lat"))?;
-                let stop_lon = stop_lon.ok_or_else(|| de::Error::missing_field("stop_lon"))?;
+                let lat = lat.ok_or_else(|| de::Error::missing_field(lat_field_name))?;
+                let lon = lon.ok_or_else(|| de::Error::missing_field(lon_field_name))?;
 
-                Ok(GtfsCoordFlatten { stop_lat, stop_lon })
+                Ok(GtfsCoord(Coord { x: lon, y: lat }))
             }
         }
 
         // Use the custom visitor for deserialization
-        deserializer.deserialize_map(GtfsCoordFlattenVisitor)
+        deserializer.deserialize_map(GtfsCoordVisitor)
     }
 }
 
@@ -604,27 +628,8 @@ fn parse_float(value: &serde_json::Value) -> Result<f64, String> {
     }
 }
 
-// Implement conversion between GtfsCoord and GtfsCoordFlatten
-impl From<GtfsCoordFlatten> for GtfsCoord {
-    fn from(gtfs_coord: GtfsCoordFlatten) -> Self {
-        GtfsCoord(Coord {
-            x: gtfs_coord.stop_lon,
-            y: gtfs_coord.stop_lat,
-        })
-    }
-}
-
-impl Into<GtfsCoordFlatten> for GtfsCoord {
-    fn into(self) -> GtfsCoordFlatten {
-        GtfsCoordFlatten {
-            stop_lat: self.y,
-            stop_lon: self.x,
-        }
-    }
-}
-
 // Implement Deref and DerefMut to make GtfsCoord behave like Coord
-impl Deref for GtfsCoord {
+impl<const COORD_TYPE: coord_type::T> Deref for GtfsCoord<COORD_TYPE> {
     type Target = Coord;
 
     fn deref(&self) -> &Self::Target {
@@ -632,7 +637,7 @@ impl Deref for GtfsCoord {
     }
 }
 
-impl DerefMut for GtfsCoord {
+impl<const COORD_TYPE: coord_type::T> DerefMut for GtfsCoord<COORD_TYPE> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

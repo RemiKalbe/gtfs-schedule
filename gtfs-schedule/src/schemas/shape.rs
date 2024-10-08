@@ -4,11 +4,10 @@
 //! - [`Shape`]: Represents a shape.
 //! - [`ShapeId`]: Identifies a shape.
 
-use geo::Coord;
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
 
-use super::Schema;
+use super::{coord_type, GtfsCoord, Schema};
 use crate::error::{Result, SchemaValidationError};
 
 /// Identifies a shape.
@@ -28,7 +27,8 @@ pub struct Shape {
     /// Identifies a shape.
     pub shape_id: ShapeId,
     /// Geographic coordinate of the shape point.
-    pub shape_pt: Coord,
+    #[serde(flatten)]
+    pub shape_pt: GtfsCoord<{ coord_type::SHAPE }>,
     /// Sequence in which the shape points connect to form the shape. Values must increase along the trip but do not need to be consecutive.
     pub shape_pt_sequence: u32,
     /// Actual distance traveled along the shape from the first shape point to the point specified in this record.
