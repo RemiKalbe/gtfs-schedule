@@ -12,6 +12,7 @@ use gtfs_schedule_macros::StringWrapper;
 use phonenumber::PhoneNumber;
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 use url::Url;
 
 use crate::error::{Result, SchemaValidationError};
@@ -38,6 +39,7 @@ pub enum BookingType {
 ///
 /// See [booking_rules.txt](https://gtfs.org/schedule/reference/#booking_rulestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct BookingRule {
     /// Identifies a rule.
     pub booking_rule_id: BookingRuleId,

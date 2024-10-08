@@ -7,6 +7,7 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use serde_with::{serde_as, DurationSeconds};
 
 use crate::error::{Result, SchemaValidationError};
@@ -15,6 +16,7 @@ use super::{NaiveServiceTime, Schema, TripId};
 
 /// Indicates the type of service for a trip.
 #[derive(Serialize, Debug, PartialEq, Eq, Clone)]
+#[repr(u8)]
 pub enum ExactTimes {
     /// Frequency-based trips.
     Approximate = 0,
@@ -59,6 +61,7 @@ impl<'de> Deserialize<'de> for ExactTimes {
 /// See [frequencies.txt](https://gtfs.org/schedule/reference/#frequenciestxt) for more details.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Frequency {
     /// Identifies a trip to which the specified headway of service applies.
     pub trip_id: TripId,

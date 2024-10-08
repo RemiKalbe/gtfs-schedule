@@ -7,6 +7,7 @@ use chrono::NaiveDate;
 use email_address::EmailAddress;
 use oxilangtag::LanguageTag;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use url::Url;
 
 use super::{deserialize_optional_date, serialize_optional_date, Schema};
@@ -19,6 +20,7 @@ use crate::error::{Result, SchemaValidationError};
 ///
 /// See [feed_info.txt](https://gtfs.org/schedule/reference/#feed_infotxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct FeedInfo {
     /// Full name of the organization that publishes the dataset. This may be
     /// the same as one of the [`crate::schemas::agency::Agency::agency_name`] values.
@@ -62,13 +64,15 @@ pub struct FeedInfo {
     /// in the active calendar dates.
     #[serde(
         serialize_with = "serialize_optional_date",
-        deserialize_with = "deserialize_optional_date"
+        deserialize_with = "deserialize_optional_date",
+        default
     )]
     pub feed_start_date: Option<NaiveDate>,
     /// See the description for [`FeedInfo::feed_start_date`].
     #[serde(
         serialize_with = "serialize_optional_date",
-        deserialize_with = "deserialize_optional_date"
+        deserialize_with = "deserialize_optional_date",
+        default
     )]
     pub feed_end_date: Option<NaiveDate>,
     /// String that indicates the current version of their GTFS dataset. GTFS-consuming applications

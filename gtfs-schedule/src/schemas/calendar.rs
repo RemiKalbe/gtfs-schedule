@@ -9,6 +9,7 @@ use chrono::NaiveDate;
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 
 use super::{deserialize_date, serialize_date, Schema};
 use crate::error::{Result, SchemaValidationError};
@@ -31,6 +32,7 @@ pub enum CalendarDayService {
 ///
 /// See [calendar.txt](https://gtfs.org/schedule/reference/#calendartxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Calendar {
     /// Identifies a set of dates when service is available for one or more routes.
     pub service_id: CalendarServiceId,

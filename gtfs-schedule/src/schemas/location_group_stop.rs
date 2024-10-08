@@ -4,6 +4,7 @@
 //! - [`LocationGroupStop`]: Assigns stops from [`crate::schemas::stop::Stop`] to location groups.
 
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::{LocationGroupId, Schema, StopId};
 use crate::error::{Result, SchemaValidationError};
@@ -12,6 +13,7 @@ use crate::error::{Result, SchemaValidationError};
 ///
 /// See [location_group_stops.txt](https://gtfs.org/schedule/reference/#location_group_stopstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct LocationGroupStop {
     /// Identifies a location group to which one or multiple [`LocationGroupStop::stop_id`] belong.
     /// The same [`LocationGroupStop::stop_id`] may be defined in many [`LocationGroupStop::location_group_id`].

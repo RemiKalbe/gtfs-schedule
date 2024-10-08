@@ -6,6 +6,7 @@
 
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::Schema;
 use crate::error::{Result, SchemaValidationError};
@@ -19,6 +20,7 @@ pub struct LocationGroupId(pub String);
 ///
 /// See [location_groups.txt](https://gtfs.org/schedule/reference/#location_groupstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct LocationGroup {
     /// Identifies a location group.
     pub location_group_id: LocationGroupId,

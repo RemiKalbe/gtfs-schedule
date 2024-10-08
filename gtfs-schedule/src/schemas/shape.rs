@@ -6,6 +6,7 @@
 
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::{coord_type, GtfsCoord, Schema};
 use crate::error::{Result, SchemaValidationError};
@@ -23,6 +24,7 @@ pub struct ShapeId(pub String);
 ///
 /// See [shapes.txt](https://gtfs.org/schedule/reference/#shapestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Shape {
     /// Identifies a shape.
     pub shape_id: ShapeId,

@@ -10,6 +10,7 @@ use std::num::NonZeroUsize;
 
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 
 use super::{FareLegRuleId, FareProductId, Schema};
 use crate::error::{Result, SchemaValidationError};
@@ -58,6 +59,7 @@ pub enum FareTransferType {
 ///
 /// See [fare_transfer_rules.txt](https://gtfs.org/schedule/reference/#fare_transfer_rulestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct FareTransferRule {
     /// Identifies a group of pre-transfer fare leg rules.
     pub from_leg_group_id: Option<FareLegRuleId>,

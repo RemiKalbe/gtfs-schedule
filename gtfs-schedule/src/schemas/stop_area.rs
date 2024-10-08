@@ -4,6 +4,7 @@
 //! - [`StopArea`]: Assigns stops from [`crate::schemas::stop::Stop`] to areas.
 
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::{AreaId, Schema, StopId};
 use crate::error::{Result, SchemaValidationError};
@@ -12,6 +13,7 @@ use crate::error::{Result, SchemaValidationError};
 ///
 /// See [stop_areas.txt](https://gtfs.org/schedule/reference/#stop_areastxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct StopArea {
     /// Identifies an area to which one or multiple [`StopArea::stop_id`] belong.
     /// The same [`StopArea::stop_id`] may be defined in many [`AreaId`].

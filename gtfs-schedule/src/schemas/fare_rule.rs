@@ -4,6 +4,7 @@
 //! - [`FareRule`]: Represents a rule that specifies how fares apply to an itinerary.
 
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::{RouteId, Schema};
 use crate::{
@@ -15,6 +16,7 @@ use crate::{
 ///
 /// See [fare_rules.txt](https://gtfs.org/schedule/reference/#fare_rulestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct FareRule {
     /// Identifies a fare class.
     pub fare_id: FareId,

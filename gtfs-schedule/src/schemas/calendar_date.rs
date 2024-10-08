@@ -7,6 +7,7 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 
 use super::{deserialize_date, serialize_date, Schema};
 use crate::{
@@ -28,6 +29,7 @@ pub enum ExceptionType {
 ///
 /// See [calendar_dates.txt](https://gtfs.org/schedule/reference/#calendar_datestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct CalendarDate {
     /// Identifies a set of dates when a service exception occurs for one or more routes.
     /// Each ([`CalendarDate::service_id`], [`CalendarDate::date`]) pair may only appear

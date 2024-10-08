@@ -8,6 +8,7 @@
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 
 use super::{AgencyId, ContinuousDropOff, ContinuousPickup, NetworkId, Schema};
 use crate::error::{Result, SchemaValidationError};
@@ -47,6 +48,7 @@ pub enum RouteType {
 ///
 /// See [routes.txt](https://gtfs.org/schedule/reference/#routestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Route {
     /// Identifies a route.
     pub route_id: RouteId,

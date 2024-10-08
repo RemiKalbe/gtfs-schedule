@@ -6,6 +6,7 @@
 
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::Schema;
 use crate::error::{Result, SchemaValidationError};
@@ -18,6 +19,7 @@ pub struct LevelId(pub String);
 ///
 /// See [levels.txt](https://gtfs.org/schedule/reference/#levelstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Level {
     /// Identifies a level in a station.
     pub level_id: LevelId,

@@ -6,6 +6,7 @@
 
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use crate::schemas::timeframe::TimeframeGroupId;
 use crate::{
@@ -23,6 +24,7 @@ pub struct FareLegRuleId(pub String);
 ///
 /// See [fare_leg_rules.txt](https://gtfs.org/schedule/reference/#fare_leg_rulestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct FareLegRule {
     /// Identifies a group of entries in `fare_leg_rules.txt`.
     pub leg_group_id: Option<FareLegRuleId>,

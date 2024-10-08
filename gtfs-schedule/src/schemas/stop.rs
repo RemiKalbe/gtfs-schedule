@@ -9,6 +9,7 @@ use chrono_tz::Tz;
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 
 use crate::error::{Result, SchemaValidationError};
 
@@ -47,6 +48,7 @@ pub enum WheelchairBoarding {
 ///
 /// See [stops.txt](https://gtfs.org/schedule/reference/#stopstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Stop {
     /// Identifies a location: stop/platform, station, entrance/exit, generic node or
     /// boarding area (see [`LocationType`]).

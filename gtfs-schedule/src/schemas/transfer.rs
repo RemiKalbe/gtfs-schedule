@@ -5,12 +5,14 @@
 //! - [`TransferType`]: Indicates the type of connection for the specified (from_stop_id, to_stop_id) pair.
 
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::{RouteId, Schema, StopId, TripId};
 use crate::error::{Result, SchemaValidationError};
 
 /// Indicates the type of connection for the specified (from_stop_id, to_stop_id) pair.
 #[derive(Serialize, Debug, Clone)]
+#[repr(u8)]
 pub enum TransferType {
     /// Recommended transfer point between routes.
     RecommendedTransferPoint = 0,
@@ -58,6 +60,7 @@ impl<'de> Deserialize<'de> for TransferType {
 ///
 /// See [transfers.txt](https://gtfs.org/schedule/reference/#transferstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Transfer {
     /// Identifies a stop or station where a connection between routes begins.
     ///

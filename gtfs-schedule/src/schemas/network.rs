@@ -6,6 +6,7 @@
 
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::Schema;
 use crate::error::{Result, SchemaValidationError};
@@ -18,6 +19,7 @@ pub struct NetworkId(pub String);
 ///
 /// See [networks.txt](https://gtfs.org/schedule/reference/#networkstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Network {
     /// Identifies a network.
     pub network_id: NetworkId,

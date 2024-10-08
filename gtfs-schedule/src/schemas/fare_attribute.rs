@@ -12,6 +12,7 @@ use gtfs_schedule_macros::StringWrapper;
 use iso_currency::Currency;
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 
 use crate::{
     error::{Result, SchemaValidationError},
@@ -50,6 +51,7 @@ pub enum FareTransfers {
 ///
 /// See [fare_attributes.txt](https://gtfs.org/schedule/reference/#fare_attributestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct FareAttribute {
     /// Identifies a fare class.
     pub fare_id: FareId,

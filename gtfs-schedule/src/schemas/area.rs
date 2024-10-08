@@ -6,6 +6,7 @@
 
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::Schema;
 use crate::error::{Result, SchemaValidationError};
@@ -20,6 +21,7 @@ pub struct AreaId(pub String);
 ///
 /// See [areas.txt](https://gtfs.org/schedule/reference/#areastxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Area {
     /// Identifies an area. Must be unique in [areas.txt](https://gtfs.org/schedule/reference/#areastxt).
     pub area_id: AreaId,

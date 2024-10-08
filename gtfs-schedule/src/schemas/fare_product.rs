@@ -7,6 +7,7 @@
 use gtfs_schedule_macros::StringWrapper;
 use iso_currency::Currency;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::Schema;
 use crate::{
@@ -31,6 +32,7 @@ pub struct FareProductId(pub String);
 ///
 /// See [fare_products.txt](https://gtfs.org/schedule/reference/#fare_productstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct FareProduct {
     /// Identifies a fare product or set of fare products.
     pub fare_product_id: FareProductId,

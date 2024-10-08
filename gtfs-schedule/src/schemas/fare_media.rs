@@ -8,6 +8,7 @@
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 
 use super::Schema;
 use crate::error::{Result, SchemaValidationError};
@@ -43,6 +44,7 @@ pub enum FareMediaType {
 ///
 /// See [fare_media.txt](https://gtfs.org/schedule/reference/#fare_mediatxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct FareMedia {
     /// Identifies a fare media.
     pub fare_media_id: FareMediaId,

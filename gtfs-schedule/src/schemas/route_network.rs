@@ -4,6 +4,7 @@
 //! - [`RouteNetwork`]: Assigns routes from [`crate::schemas::route::Route`] to networks.
 
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::{NetworkId, RouteId, Schema};
 use crate::error::{Result, SchemaValidationError};
@@ -12,6 +13,7 @@ use crate::error::{Result, SchemaValidationError};
 ///
 /// See [route_networks.txt](https://gtfs.org/schedule/reference/#route_networkstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct RouteNetwork {
     /// Identifies a network to which one or multiple [`RouteNetwork::route_id`]
     /// belong. A [`RouteNetwork::route_id`] can only be defined in one [`RouteNetwork::network_id`].

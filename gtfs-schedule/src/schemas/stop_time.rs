@@ -9,6 +9,7 @@
 
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 
 use super::{ContinuousDropOff, ContinuousPickup, NaiveServiceTime, Schema, StopId, TripId};
 use crate::error::{Result, SchemaValidationError};
@@ -43,6 +44,7 @@ pub enum DropOffType {
 
 /// Indicates if arrival and departure times for a stop are strictly adhered to by the vehicle or if they are approximate and/or interpolated times.
 #[derive(Serialize, Debug, PartialEq, Eq, Clone)]
+#[repr(u8)]
 pub enum Timepoint {
     /// Times are considered approximate.
     Approximate = 0,
@@ -74,6 +76,7 @@ impl<'de> Deserialize<'de> for Timepoint {
 ///
 /// See [stop_times.txt](https://gtfs.org/schedule/reference/#stop_timestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct StopTime {
     /// Identifies a trip.
     pub trip_id: TripId,

@@ -5,6 +5,7 @@
 
 use oxilangtag::LanguageTag;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::Schema;
 use crate::error::{Result, SchemaValidationError};
@@ -47,6 +48,7 @@ pub enum TableName {
 ///
 /// See [translations.txt](https://gtfs.org/schedule/reference/#translationstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Translation {
     /// Defines the table that contains the field to be translated.
     ///

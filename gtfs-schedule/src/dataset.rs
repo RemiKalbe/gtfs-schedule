@@ -2060,9 +2060,9 @@ impl Dataset {
                             }
                         }
                     } else {
-                        // This means only one language should be in translations.txt
-                        if languages.len() != 1
-                            || languages.iter().next().unwrap() != &feed_info.feed_lang
+                        // This means only one language should be in translations.txt (or none)
+                        if languages.len() > 1
+                            && languages.iter().next().unwrap() != &feed_info.feed_lang
                         {
                             return Err(DatasetValidationError::new_inconsistent_value(
                                 "feed_lang".to_string(),

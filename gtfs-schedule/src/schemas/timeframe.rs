@@ -7,6 +7,7 @@
 use chrono::NaiveTime;
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 use super::{CalendarServiceId, Schema};
 use crate::error::{Result, SchemaValidationError};
@@ -23,6 +24,7 @@ pub struct TimeframeGroupId(pub String);
 ///
 /// See [timeframes.txt](https://gtfs.org/schedule/reference/#timeframestxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Timeframe {
     /// Identifies a timeframe or set of timeframes.
     pub timeframe_group_id: TimeframeGroupId,

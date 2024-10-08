@@ -62,3 +62,8 @@ fn test_good_feed_au_sydney_entrances() {
 fn test_good_flatten_feed() {
     test_dataset("flatten_feed", Ok(()));
 }
+
+#[test]
+fn test_good_google_transit() {
+    test_dataset("googletransit", Ok(()));
+}

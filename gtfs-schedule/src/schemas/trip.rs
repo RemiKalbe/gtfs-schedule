@@ -10,6 +10,7 @@
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
+use serde_with::skip_serializing_none;
 
 use super::{RouteId, Schema};
 use crate::error::{Result, SchemaValidationError};
@@ -33,6 +34,7 @@ pub enum DirectionId {
 
 /// Indicates wheelchair accessibility.
 #[derive(Serialize, Debug, Clone)]
+#[repr(u8)]
 pub enum WheelchairAccessible {
     /// No accessibility information for the trip.
     NoInformation = 0,
@@ -97,6 +99,7 @@ impl<'de> Deserialize<'de> for BikesAllowed {
 ///
 /// See [trips.txt](https://gtfs.org/schedule/reference/#tripstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Trip {
     /// Identifies a route.
     pub route_id: RouteId,

@@ -10,7 +10,7 @@ use std::time::Duration;
 use gtfs_schedule_macros::StringWrapper;
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
-use serde_with::{serde_as, DurationSeconds};
+use serde_with::{serde_as, skip_serializing_none, DurationSeconds};
 
 use super::{
     common::{deserialize_bool_as_int, serialize_bool_as_int},
@@ -57,6 +57,7 @@ pub enum PathwayMode {
 /// See [pathways.txt](https://gtfs.org/schedule/reference/#pathwaystxt) for more details.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Pathway {
     /// Identifies a pathway.
     pub pathway_id: PathwayId,

@@ -8,6 +8,7 @@ use email_address::EmailAddress;
 use gtfs_schedule_macros::StringWrapper;
 use phonenumber::PhoneNumber;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use url::Url;
 
 use crate::error::{Result, SchemaValidationError};
@@ -23,6 +24,7 @@ pub struct AttributionId(pub String);
 ///
 /// See [attributions.txt](https://gtfs.org/schedule/reference/#attributionstxt) for more details.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[skip_serializing_none]
 pub struct Attribution {
     /// Identifies an attribution for the dataset or a subset of it. This is mostly useful for translations.
     pub attribution_id: Option<AttributionId>,
