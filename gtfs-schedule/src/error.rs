@@ -19,7 +19,47 @@ pub enum Error {
 }
 
 #[derive(Error, Debug, Diagnostic)]
-pub enum ParseError {
+pub struct ErrorContext(pub String);
+
+impl<'s> std::fmt::Display for ErrorContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Error, Debug, Diagnostic)]
+pub struct ParseError {
+    #[source]
+    #[diagnostic_source]
+    pub kind: ParseErrorKind,
+    #[related]
+    pub context: Vec<ErrorContext>,
+}
+
+impl ParseError {
+    pub fn with_context(mut self, context: ErrorContext) -> Self {
+        self.context.push(context);
+        self
+    }
+}
+
+impl From<ParseErrorKind> for ParseError {
+    fn from(kind: ParseErrorKind) -> Self {
+        Self {
+            kind,
+            context: vec![],
+        }
+    }
+}
+
+impl<'s> std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.kind)
+    }
+}
+
+#[derive(Error, Debug, Diagnostic)]
+pub enum ParseErrorKind {
     #[error("Regex error: {0}")]
     Regex(#[from] regex::Error),
     #[error("Chrono error: {0}")]

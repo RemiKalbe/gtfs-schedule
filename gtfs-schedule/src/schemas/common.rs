@@ -22,7 +22,7 @@ use serde::de::{self, Error as DeError, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_repr::*;
 
-use crate::error::{Error, ParseError};
+use crate::error::{Error, ParseError, ParseErrorKind};
 
 use super::{
     Agency, Area, Attribution, BookingRule, Calendar, CalendarDate, FareAttribute, FareLegRule,
@@ -309,13 +309,23 @@ impl TryFrom<&str> for NaiveServiceTime {
 
     fn try_from(s: &str) -> std::result::Result<Self, Self::Error> {
         let parts: Vec<_> = s.split(':').collect();
-        let hours: u32 = parts[0].parse().map_err(ParseError::from)?;
-        let minutes: u32 = parts[1].parse().map_err(ParseError::from)?;
-        let seconds: u32 = parts[2].parse().map_err(ParseError::from)?;
+        let hours: u32 = parts[0]
+            .parse()
+            .map_err(ParseErrorKind::from)
+            .map_err(ParseError::from)?;
+        let minutes: u32 = parts[1]
+            .parse()
+            .map_err(ParseErrorKind::from)
+            .map_err(ParseError::from)?;
+        let seconds: u32 = parts[2]
+            .parse()
+            .map_err(ParseErrorKind::from)
+            .map_err(ParseError::from)?;
 
         let overflow = hours >= 24;
         let time = NaiveTime::from_hms_opt(hours % 24, minutes, seconds)
-            .ok_or_else(|| ParseError::InvalidValue(format!("Invalid time: {}", s)))?;
+            .ok_or_else(|| ParseErrorKind::InvalidValue(format!("Invalid time: {}", s)))
+            .map_err(ParseError::from)?;
 
         Ok(NaiveServiceTime { time, overflow })
     }

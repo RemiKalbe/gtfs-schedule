@@ -21,6 +21,7 @@ fn test_dataset(dataset_name: &str, expected_result: Result<(), gtfs_schedule::e
                 expected,
                 actual
             );
+            return;
         }
     }
 
@@ -41,6 +42,10 @@ fn test_dataset(dataset_name: &str, expected_result: Result<(), gtfs_schedule::e
         }
     }
 }
+
+//
+// Good datasets
+//
 
 #[test]
 fn test_good_feed_default() {
@@ -66,4 +71,73 @@ fn test_good_flatten_feed() {
 #[test]
 fn test_good_google_transit() {
     test_dataset("googletransit", Ok(()));
+}
+
+#[test]
+fn test_good_utf8_bom() {
+    test_dataset("utf8bom", Ok(()));
+}
+
+//
+// Bad datasets
+//
+
+// Utils
+
+/// Unsafe function to create a fake `csv::Error` for testing purposes.
+///
+/// ### Safety
+/// This function uses `mem::transmute` to bypass the private constructor of `csv::Error`.
+pub unsafe fn create_fake_csv_error(kind: csv::ErrorKind) -> csv::Error {
+    std::mem::transmute(Box::new(kind))
+}
+
+/// Unsafe function to create a fake `DeserializeError` for testing.
+///
+/// ### Safety
+/// This function uses `mem::transmute` to bypass private field restrictions.
+pub unsafe fn create_fake_deserialize_error(
+    field: Option<u64>,
+    kind: csv::DeserializeErrorKind,
+) -> csv::DeserializeError {
+    std::mem::transmute((field, kind))
+}
+
+pub fn create_fake_csv_position(byte: u64, line: u64, record: u64) -> csv::Position {
+    let mut position = csv::Position::new();
+    position.set_byte(byte);
+    position.set_line(line);
+    position.set_record(record);
+
+    let position = position;
+    position
+}
+
+#[test]
+fn test_bad_date_format() {
+    let position = create_fake_csv_position(31, 1, 1);
+    let deserialize_error = unsafe {
+        create_fake_deserialize_error(
+            None,
+            csv::DeserializeErrorKind::Message(
+                "Invalid date format: input contains invalid characters".to_string(),
+            ),
+        )
+    };
+
+    let error_kind = csv::ErrorKind::Deserialize {
+        pos: Some(position),
+        err: deserialize_error,
+    };
+
+    let fake_error = unsafe { create_fake_csv_error(error_kind) };
+
+    test_dataset(
+        "bad_date_format",
+        Err(gtfs_schedule::error::Error::ParseError(
+            gtfs_schedule::error::ParseError::from(gtfs_schedule::error::ParseErrorKind::Csv(
+                fake_error,
+            )),
+        )),
+    );
 }

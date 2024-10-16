@@ -6,10 +6,9 @@ use std::{cell::OnceCell, env};
 
 use chrono::NaiveDate;
 use dashmap::DashMap;
-use miette::{IntoDiagnostic, Result, WrapErr};
 use oxilangtag::LanguageTag;
 
-use crate::error::DatasetValidationError;
+use crate::error::{DatasetValidationError, ErrorContext, ParseError, ParseErrorKind, Result};
 use crate::schemas::*;
 
 pub static CSV_FILES: &[&str] = &[
@@ -2150,7 +2149,7 @@ impl Dataset {
     pub fn from_csv(dir: &Path) -> Result<Self> {
         // Get all files in the directory matching the CSV_FILES
         let files = std::fs::read_dir(dir)
-            .into_diagnostic()?
+            .map_err(|e| ParseError::from(ParseErrorKind::from(e)))?
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.path().is_file())
             .filter(|entry| {
@@ -2165,174 +2164,116 @@ impl Dataset {
         for file in files {
             let file_name = file.file_name();
             let file_name = file_name.to_str().unwrap();
-            let mut reader = csv::Reader::from_path(file.path()).into_diagnostic()?;
-            let header = reader.headers().into_diagnostic()?.clone();
+            let mut reader = csv::Reader::from_path(file.path())
+                .map_err(|e| ParseError::from(ParseErrorKind::from(e)))?;
+            let header = reader
+                .headers()
+                .map_err(|e| ParseError::from(ParseErrorKind::from(e)))?
+                .clone();
             for record in reader.records() {
-                let record = record.into_diagnostic()?;
+                let record = record.map_err(|e| ParseError::from(ParseErrorKind::from(e)))?;
                 let position = record.position().expect("Could not get position of record");
+                let wrap_err_with_context = |f: &str| {
+                    format!(
+                        "Failed to deserialize {} at position: {:?}; Cell: {:?}",
+                        f,
+                        position,
+                        record.get(position.record() as usize).unwrap()
+                    )
+                };
                 match file_name {
                     "agency.txt" => {
-                        let record: Agency = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize agency.txt at position: {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Agency = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.agencies.push(record);
                     }
                     "stops.txt" => {
-                        let record: Stop = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize stops.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Stop = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.stops.insert(record.stop_id.clone(), record);
                     }
                     "routes.txt" => {
-                        let record: Route = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize routes.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Route = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.routes.insert(record.route_id.clone(), record);
                     }
                     "trips.txt" => {
-                        let record: Trip = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize trips.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Trip = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.trips.insert(record.trip_id.clone(), record);
                     }
                     "stop_times.txt" => {
-                        let record: StopTime = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize stop_times.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: StopTime = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset
                             .stop_times
                             .insert((record.trip_id.clone(), record.stop_sequence), record);
                     }
                     "calendar.txt" => {
-                        let record: Calendar = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize calendar.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Calendar = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.calendar.insert(record.service_id.clone(), record);
                     }
                     "calendar_dates.txt" => {
-                        let record: CalendarDate = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize calendar_dates.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: CalendarDate =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset
                             .calendar_dates
                             .insert((record.service_id.clone(), record.date), record);
                     }
                     "fare_attributes.txt" => {
-                        let record: FareAttribute = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize fare_attributes.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: FareAttribute =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset
                             .fare_attributes
                             .insert(record.fare_id.clone(), record);
                     }
                     "fare_rules.txt" => {
-                        let record: FareRule = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize fare_rules.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: FareRule = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.fare_rules.push(record);
                     }
                     "timeframes.txt" => {
-                        let record: Timeframe = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize timeframes.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Timeframe = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.timeframes.push(record);
                     }
                     "fare_media.txt" => {
-                        let record: FareMedia = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize fare_media.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: FareMedia = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset
                             .fare_medias
                             .insert(record.fare_media_id.clone(), record);
                     }
                     "fare_products.txt" => {
-                        let record: FareProduct = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize fare_products.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: FareProduct =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset.fare_products.insert(
                             (record.fare_product_id.clone(), record.fare_media_id.clone()),
@@ -2340,233 +2281,139 @@ impl Dataset {
                         );
                     }
                     "fare_leg_rules.txt" => {
-                        let record: FareLegRule = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize fare_leg_rules.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: FareLegRule =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset.fare_leg_rules.push(record);
                     }
                     "fare_transfers.txt" => {
-                        let record: FareTransferRule = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize fare_transfers.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: FareTransferRule =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset.fare_transfers.push(record);
                     }
                     "areas.txt" => {
-                        let record: Area = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize areas.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Area = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.areas.insert(record.area_id.clone(), record);
                     }
                     "stops_areas.txt" => {
-                        let record: StopArea = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize stops_areas.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: StopArea = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.stops_areas.push(record);
                     }
                     "networks.txt" => {
-                        let record: Network = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                            format!(
-                                "Failed to deserialize networks.txt at position {:?}; Cell: {:?}",
-                                position,
-                                record.get(position.record() as usize).unwrap()
-                            )
+                        let record: Network = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
                         })?;
                         dataset.networks.insert(record.network_id.clone(), record);
                     }
                     "routes_networks.txt" => {
-                        let record: RouteNetwork = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize routes_networks.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: RouteNetwork =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset
                             .routes_networks
                             .insert(record.route_id.clone(), record);
                     }
                     "shapes.txt" => {
-                        let record: Shape = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize shapes.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Shape = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset
                             .shapes
                             .insert((record.shape_id.clone(), record.shape_pt_sequence), record);
                     }
                     "frequencies.txt" => {
-                        let record: Frequency = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize frequencies.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Frequency = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset
                             .frequencies
                             .insert((record.trip_id.clone(), record.start_time), record);
                     }
                     "transfers.txt" => {
-                        let record: Transfer = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize transfers.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Transfer = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.transfers.push(record);
                     }
                     "pathways.txt" => {
-                        let record: Pathway = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                            format!(
-                                "Failed to deserialize pathways.txt at position {:?}; Cell: {:?}",
-                                position,
-                                record.get(position.record() as usize).unwrap()
-                            )
+                        let record: Pathway = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
                         })?;
                         dataset.pathways.insert(record.pathway_id.clone(), record);
                     }
                     "levels.txt" => {
-                        let record: Level = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize levels.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: Level = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.levels.insert(record.level_id.clone(), record);
                     }
                     "location_groups.txt" => {
-                        let record: LocationGroup = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize location_groups.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: LocationGroup =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset
                             .location_groups
                             .insert(record.location_group_id.clone(), record);
                     }
                     "location_groups_stops.txt" => {
-                        let record: LocationGroupStop = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize location_groups_stops.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: LocationGroupStop =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset.location_groups_stops.push(record);
                     }
                     "booking_rules.txt" => {
-                        let record: BookingRule = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize booking_rules.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: BookingRule =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset
                             .booking_rules
                             .insert(record.booking_rule_id.clone(), record);
                     }
                     "translations.txt" => {
-                        let record: Translation = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize translations.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: Translation =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset.translations.push(record);
                     }
                     "feed_info.txt" => {
-                        let record: FeedInfo = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize feed_info.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
-                            })?;
+                        let record: FeedInfo = record.deserialize(Some(&header)).map_err(|e| {
+                            ParseError::from(ParseErrorKind::from(e))
+                                .with_context(ErrorContext(wrap_err_with_context(file_name)))
+                        })?;
                         dataset.feed_info = Some(record);
                     }
                     "attributions.txt" => {
-                        let record: Attribution = record
-                            .deserialize(Some(&header))
-                            .into_diagnostic()
-                            .wrap_err_with(|| {
-                                format!(
-                                    "Failed to deserialize attributions.txt at position {:?}; Cell: {:?}",
-                                    position,
-                                    record.get(position.record() as usize).unwrap()
-                                )
+                        let record: Attribution =
+                            record.deserialize(Some(&header)).map_err(|e| {
+                                ParseError::from(ParseErrorKind::from(e))
+                                    .with_context(ErrorContext(wrap_err_with_context(file_name)))
                             })?;
                         dataset.attributions.push(record);
                     }
